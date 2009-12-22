@@ -8,4 +8,10 @@ else
 default:
 	$(MAKE) -C $(KERNELDIR) M=$(PWD)  modules
 
+load:
+	sudo insmod luirc.ko
+
+clean:
+	rm luirc.mod.c luirc.ko modules.order Module.symvers Module.markers luirc.o luirc.mod.o
+
 endif

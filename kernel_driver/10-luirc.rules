@@ -1,0 +1,1 @@
+KERNEL=="luirc", NAME="%k", MODE="0222"

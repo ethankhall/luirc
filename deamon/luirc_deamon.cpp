@@ -35,7 +35,30 @@ int main(int argc, char *argv[]){
 	int command;
 	int option_index;
 	
-	preferences = fopen("luirc.conf", "r");
+	map<string,string> preferences;
+	map<string,string>::iterator itter;
+	map<string,char>::iterator itter_info;
+	map<string,char> preferences_info;
+	
+	preferences.insert ( pair<string,string>("61A042BD","UPARROW") );
+	preferences.insert ( pair<string,string>("61A0C23D","DOWNARROW") );
+	preferences.insert ( pair<string,string>("61A06897","LEFTARROW") );
+	preferences.insert ( pair<string,string>("61A0A857","RIGHTARROW") );
+	preferences.insert ( pair<string,string>("61A018E7","ENTER") );
+	preferences.insert ( pair<string,string>("61A0D827","EXIT") );
+	preferences.insert ( pair<string,string>("61A050AF","CHUP") );
+	preferences.insert ( pair<string,string>("61A0D02F","CHDOWN") );
+	
+	preferences_info.insert ( pair<string,char>("UPARROW",(char)103) );
+	preferences_info.insert ( pair<string,char>("DOWNARROW",(char)108) );
+	preferences_info.insert ( pair<string,char>("LEFTARROW",(char)105) );
+	preferences_info.insert ( pair<string,char>("RIGHTARROW",(char)106) );
+	preferences_info.insert ( pair<string,char>("ENTER",(char)28) );
+	preferences_info.insert ( pair<string,char>("EXIT",(char)1) );
+	preferences_info.insert ( pair<string,char>("CHUP",(char)104) );
+	preferences_info.insert ( pair<string,char>("CHDOWN",(char)109) );
+	
+	//preferences = fopen("luirc.conf", "r");
 	
 	signal(SIGINT,cleanup); 
 	signal(SIGTERM,cleanup); 
@@ -52,14 +75,18 @@ int main(int argc, char *argv[]){
 ;
 
 	programOptions::variables_map vm;
-	programOptions::store(programOptions::parse_command_line(argc, argv, desc), vm);
-	programOptions::notify(vm);    
-
+	programOptions::store(programOptions::command_line_parser(argc, argv).options(desc).allow_unregistered().run(), vm);
+	programOptions::notify(vm);  
+	
+	
 	if (vm.count("help")) {
 		//Print out description
 		cout << desc << "\n";
+		
+		printf("Note: Any unknown options will be ignored\n");
 		return 1;
 	}
+
 
 	if (vm.count("verbose")) {
 		verbose_flag = 1;
@@ -75,17 +102,21 @@ int main(int argc, char *argv[]){
 	
 	if(vm.count("version")){
 		printf("Version: %s\n", VERSION_NUMBER);
-		return -1;
+		return 1;
 	}
-	
-	
 	
 	//Begin functionality
 	if(verbose_flag){
 		printf("Here are the preferences that you have loaded:\n");
-		for(i = 0; i < 8; i++){
-			printf("prefArray[%s] = \"%s\"\n", prefIndex[i].c_str(), prefArray[i].c_str());
+		printf("{input string} \t= {key press}\n");
+		for(itter=preferences.begin(); itter != preferences.end(); ++itter){
+			cout << "[" << itter->first << "] \t= " << itter->second << endl;
 		}
+		
+		//Old version: TODO Remove below
+		//for(i = 0; i < 8; i++){
+		//	printf("prefArray[%s] = \"%s\"\n", prefIndex[i].c_str(), prefArray[i].c_str());
+		//}
 	}
 	
 	
@@ -134,62 +165,45 @@ int main(int argc, char *argv[]){
 		
 		while (filetoopen){
 			output.clear();
-			for(i = 0; i < 9; i++){
-				output += getc(filetoopen);
-				//printf("%c", output[i]);  //<-- Debuging statement!
-			}
-			//if(verbose_flag) printf("input: %s\n", output.c_str());
+			char inputChar;
+			inputChar = getc(filetoopen);
 			
-			//Null terminate the string.. I will always get 8 chars and so i made the
-			//string 9 so that I would be able to add a '\0' to the end of it so that
-			//I can create a little give way if I ever need to do string munipulation.
-			//
+			do{
+				output += inputChar;
+				inputChar = getc(filetoopen);
+				//printf("%c", output[i]);  //<-- Debuging statement!
+			}while(inputChar != '\n');
+			//if(verbose_flag) printf("input: %s\n", output.c_str());
 			//This will also eat the '\n' that is spit out from the output
+			
+			
 			deviceDriver = fopen("/dev/luirc", "w");
 			if(deviceDriver == 0){
 				syslog (LOG_NOTICE, "Input device not accessable, exiting..");
 				printf("Sorry can't open the device driver, exiting...\n");
 				raise(SIGTERM);
 			}
-			if(output.find(prefArray[UPARROW]) == 0){ 
-				if(verbose_flag) printf("Uparrow\n");
-				//Send the up arrow key
-				fprintf(deviceDriver, "%c", (char)103);
+			
+			//These section now use's a map to make things easier to do configurations.
+			if(verbose_flag) printf("searching for %s\n", output.c_str());
+			itter = preferences.find(output.c_str());
+			if(itter != preferences.end()){
 				
-			} else if(output.find(prefArray[DOWNARROW]) == 0){
-				if(verbose_flag) printf("Down\n");
-				//Send the down arrow key
-				fprintf(deviceDriver, "%c", (char)108);
+				if(verbose_flag) { cout << "Command is: " << itter->second << endl; }
 				
-			} else if(output.find(prefArray[LEFTARROW]) == 0){
-				if(verbose_flag) printf("Left\n");
-				//Send the left arrow key
-				fprintf(deviceDriver, "%c", (char)105);
-				
-			} else if(output.find(prefArray[RIGHTARROW]) == 0){
-				if(verbose_flag) printf("Right\n");
-				//Send the right arrow key
-				fprintf(deviceDriver, "%c", (char)106);
-				
-			} else if(output.find(prefArray[ENTER]) == 0){
-				if(verbose_flag) printf("Enter\n");
-				//Send the enter key
-				fprintf(deviceDriver, "%c", (char)28);
-				
-			} else if(output.find(prefArray[EXIT]) == 0){
-				if(verbose_flag) printf("Exit\n");
-				//Send the escape key
-				fprintf(deviceDriver, "%c", (char)1);
-				
-			} else if(output.find(prefArray[CHUP]) == 0){
-				if(verbose_flag) printf("CH UP\n");
-				//Send the pageup key
-				fprintf(deviceDriver, "%c", (char)104);
-				
-			} else if(output.find(prefArray[CHDOWN]) == 0) {
-				if(verbose_flag) printf("CH DOWN\n");
-				fprintf(deviceDriver, "%c", (char)109);
-			} 
+				//get the char to send
+				itter_info = preferences_info.find(itter->second);
+				if(itter_info != preferences_info.end()){
+					
+					inputChar = itter_info->second;
+					fprintf(deviceDriver, "%c", inputChar);
+				} else {
+					printf("Sorry I don't know that command\n");
+					syslog (LOG_NOTICE, "Invalid command, please check your config");
+				}
+			}
+			
+	
 			fclose(deviceDriver);
 		}
 		return 0;
@@ -200,13 +214,6 @@ void  cleanup(int signal){
 	if (verbose_flag) printf("Exiting program...\nGoodbye!\n");
 	syslog (LOG_NOTICE, "luirc deamon exiting nicely...");
 	closelog ();
-	if (filetoopen)
-	{
-		fclose(filetoopen);
-	}
-	if ( deviceDriver ){
-		fclose(deviceDriver);
-	}
-	return;
+	exit(1);
 }
 

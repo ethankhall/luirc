@@ -5,8 +5,8 @@ EXECUT = luirc
 LIBRARYS = boost_program_options
 
 luirc: $(OBJS)
-	$(CC) -l$(LIBRARYS) $(OBJS) -o $(EXECUT)
+	$(CC) -g -l$(LIBRARYS) $(OBJS) -o $(EXECUT)
 main: 
-	$(CC) $(FILE).cpp -c $(FILE).o
+	$(CC) -g $(FILE).cpp -c $(FILE).o
 clean:
 	rm  $(FILE).o $(EXECUT)

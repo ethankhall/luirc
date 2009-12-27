@@ -34,29 +34,33 @@ int main(int argc, char *argv[]){
 	string output;	//the output from the serial connection
 	int command;
 	int option_index;
+	std::string configFilename;
 	
-	map<string,string> preferences;
-	map<string,string>::iterator itter;
-	map<string,char>::iterator itter_info;
+	RemotePreferences prefs;
+	ButtonPreferences pref_settings;
+	
 	map<string,char> preferences_info;
+	map<string,char>::iterator itter_info;
 	
-	preferences.insert ( pair<string,string>("61A042BD","UPARROW") );
-	preferences.insert ( pair<string,string>("61A0C23D","DOWNARROW") );
-	preferences.insert ( pair<string,string>("61A06897","LEFTARROW") );
-	preferences.insert ( pair<string,string>("61A0A857","RIGHTARROW") );
-	preferences.insert ( pair<string,string>("61A018E7","ENTER") );
-	preferences.insert ( pair<string,string>("61A0D827","EXIT") );
-	preferences.insert ( pair<string,string>("61A050AF","CHUP") );
-	preferences.insert ( pair<string,string>("61A0D02F","CHDOWN") );
+	/*
+	prefs.insertToHash("61A042BD","UPARROW");
+	prefs.insertToHash("61A0C23D","DOWNARROW");
+	prefs.insertToHash("61A06897","LEFTARROW");
+	prefs.insertToHash("61A0A857","RIGHTARROW");
+	prefs.insertToHash("61A018E7","ENTER");
+	prefs.insertToHash("61A0D827","EXIT");
+	prefs.insertToHash("61A050AF","CHUP");
+	prefs.insertToHash("61A0D02F","CHDOWN");
+	*/
 	
-	preferences_info.insert ( pair<string,char>("UPARROW",(char)103) );
-	preferences_info.insert ( pair<string,char>("DOWNARROW",(char)108) );
-	preferences_info.insert ( pair<string,char>("LEFTARROW",(char)105) );
-	preferences_info.insert ( pair<string,char>("RIGHTARROW",(char)106) );
-	preferences_info.insert ( pair<string,char>("ENTER",(char)28) );
-	preferences_info.insert ( pair<string,char>("EXIT",(char)1) );
-	preferences_info.insert ( pair<string,char>("CHUP",(char)104) );
-	preferences_info.insert ( pair<string,char>("CHDOWN",(char)109) );
+	pref_settings.insertToHash("UPARROW",(char)103);
+	pref_settings.insertToHash("DOWNARROW",(char)108);
+	pref_settings.insertToHash("LEFTARROW",(char)105);
+	pref_settings.insertToHash("RIGHTARROW",(char)106);
+	pref_settings.insertToHash("ENTER",(char)28);
+	pref_settings.insertToHash("EXIT",(char)1);
+	pref_settings.insertToHash("CHUP",(char)104);
+	pref_settings.insertToHash("CHDOWN",(char)109);
 	
 	//preferences = fopen("luirc.conf", "r");
 	
@@ -72,12 +76,14 @@ int main(int argc, char *argv[]){
 		("port,p", programOptions::value<string>(), "Port that is going to be used (ie. /dev/ttyFoo)")
 		("no-deamon", "Des not deamonize the process (Great for debugging)")
 		("version,v", "Print out the version")
+		("config,c", programOptions::value<string>()->default_value(DEFAULT_OPTION_FILE), "Config file")
 ;
+	programOptions::positional_options_description p;
+	p.add("programOptions", -1);
 
 	programOptions::variables_map vm;
-	programOptions::store(programOptions::command_line_parser(argc, argv).options(desc).allow_unregistered().run(), vm);
+	programOptions::store(programOptions::command_line_parser(argc, argv).options(desc).positional(p).allow_unregistered().run(), vm);
 	programOptions::notify(vm);  
-	
 	
 	if (vm.count("help")) {
 		//Print out description
@@ -105,18 +111,17 @@ int main(int argc, char *argv[]){
 		return 1;
 	}
 	
+	if (vm.count("config")){
+		configFilename = vm["config"].as<string>();
+	}
+	
+	getConfigOptions(prefs, configFilename);
+	
 	//Begin functionality
 	if(verbose_flag){
 		printf("Here are the preferences that you have loaded:\n");
 		printf("{input string} \t= {key press}\n");
-		for(itter=preferences.begin(); itter != preferences.end(); ++itter){
-			cout << "[" << itter->first << "] \t= " << itter->second << endl;
-		}
-		
-		//Old version: TODO Remove below
-		//for(i = 0; i < 8; i++){
-		//	printf("prefArray[%s] = \"%s\"\n", prefIndex[i].c_str(), prefArray[i].c_str());
-		//}
+		prefs.displayMap();
 	}
 	
 	
@@ -152,6 +157,7 @@ int main(int argc, char *argv[]){
 			raise(SIGTERM);
 		}
 		
+		//allow the program to fork off and create a deamon
 		if(deamon_flag){
 			if(fork() > 0){
 				syslog (LOG_NOTICE, "< deamonizing luirc >");
@@ -176,7 +182,9 @@ int main(int argc, char *argv[]){
 			//if(verbose_flag) printf("input: %s\n", output.c_str());
 			//This will also eat the '\n' that is spit out from the output
 			
-			
+			//Open the device driver, and error out if the driver doesn't exist.
+			//It will put an error message out onto the screen and it will put it in the
+			// error log
 			deviceDriver = fopen("/dev/luirc", "w");
 			if(deviceDriver == 0){
 				syslog (LOG_NOTICE, "Input device not accessable, exiting..");
@@ -186,20 +194,23 @@ int main(int argc, char *argv[]){
 			
 			//These section now use's a map to make things easier to do configurations.
 			if(verbose_flag) printf("searching for %s\n", output.c_str());
-			itter = preferences.find(output.c_str());
-			if(itter != preferences.end()){
+			
+			output = prefs.searchHash(output);
+			
+			if(!output.find("")){
 				
-				if(verbose_flag) { cout << "Command is: " << itter->second << endl; }
+				//Command executed if 'verbos'
+				if(verbose_flag) { cout << "Command is: " << output << endl; }
 				
 				//get the char to send
-				itter_info = preferences_info.find(itter->second);
-				if(itter_info != preferences_info.end()){
-					
-					inputChar = itter_info->second;
+				inputChar = pref_settings.searchHash(output);
+				if(inputChar != 0){
 					fprintf(deviceDriver, "%c", inputChar);
 				} else {
-					printf("Sorry I don't know that command\n");
-					syslog (LOG_NOTICE, "Invalid command, please check your config");
+					if(verbose_flag){
+						printf("Sorry I don't know that command\n");
+						syslog (LOG_NOTICE, "Invalid command, please check your config");
+					}
 				}
 			}
 			

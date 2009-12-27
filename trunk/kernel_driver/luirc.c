@@ -204,12 +204,14 @@ static ssize_t device_write(struct file *filp,
       input_report_key(luirc_dev, KEY_PAGEUP, 0);
       input_sync(luirc_dev);
       printk("PAGEUP!\n");
+			break;
     case KEY_PAGEDOWN:
       input_report_key(luirc_dev, KEY_PAGEDOWN, 1);
       input_sync(luirc_dev);
       input_report_key(luirc_dev, KEY_PAGEDOWN, 0);
       input_sync(luirc_dev);
       printk("PAGEDOWN!\n");
+			break;
     }
   return len;
 }

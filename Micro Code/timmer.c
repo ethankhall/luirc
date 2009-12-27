@@ -126,9 +126,9 @@ int main(void) {
 		//This is the startup procedure it will always say that when the 
 		//micro starts up :-)
 
-		serial32bitPrint(0x01234567);
-		serial32bitPrint(0x89ABCDEF);
-		TransmitByte('\n');
+		//serial32bitPrint(0x01234567);
+		//serial32bitPrint(0x89ABCDEF);
+		//TransmitByte('\n');
 	sei();	//Enable Interupts
 	while(1==1) {
 	if(blinkflag == 1)	{

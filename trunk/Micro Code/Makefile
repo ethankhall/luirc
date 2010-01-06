@@ -118,12 +118,14 @@ OPTLEVEL=2
 # one of the valid "-c PROGRAMMER-ID" values 
 # described in the avrdude info page.
 # 
-AVRDUDE_PROGRAMMERID=stk500v1
+AVRDUDE_PROGRAMMERID=arduino
+#AVRDUDE_PROGRAMMERID=avrispmkII
 
 # port--serial or parallel port to which your 
 # hardware programmer is attached
 #
 AVRDUDE_PORT=/dev/ttyUSB?
+#AVRDUDE_PORT=usb
 
 
 ####################################################
@@ -233,7 +235,7 @@ hex: $(HEXTRG)
 
 writeflash: hex
 	$(AVRDUDE) -c $(AVRDUDE_PROGRAMMERID)   \
-	 -p $(PROGRAMMER_MCU) -P $(AVRDUDE_PORT)  -b 19200 -F -u  \
+	 -p $(PROGRAMMER_MCU) -P $(AVRDUDE_PORT) -b 19200 -F -u  \
 	 -U flash:w:$(HEXROMTRG)
 #avrdude -p m168 -P /dev/ttyUSB0 -c stk500v1 -b 19200 -F -u -U flash:w:talk.hex
 

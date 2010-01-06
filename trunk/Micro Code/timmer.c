@@ -23,12 +23,23 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*					Description of the flow of the code
+
+The code works in 2 ways, there is a timer set up such that when then there is input on PORTB_0
+it will time the input. There will use the timer and get a peak. depending on how long it is it 
+will put a 1 or a 0 into the buffer. There is an 8bit buffer with a 64 member circuilar buffer.
+
+It is then outputed when the timer overflows.
+
+*/
+
 //Buffer to save data to send
-volatile uint16_t buffer[64];
+volatile uint8_t buffer[64];
 volatile int bufferRead = 0;
 volatile int bufferWrite = 0;
 volatile int newData = 0;
 volatile int newline = 0;
+volatile uint8_t bitCounter = 0;
 
 //define ovrflow counter
 uint8_t ov_counter;
@@ -49,6 +60,7 @@ void serial32bitPrint(uint32_t data);
 volatile unsigned int blink = 0;
 volatile int blinkflag = 0;
 volatile uint32_t output;
+volatile int printLine = 0;
 
 //overflow counter interrupts service routine
 ISR(TIMER0_OVF_vect){
@@ -60,36 +72,34 @@ ISR(TIMER0_OVF_vect){
 }
 
 ISR(TIMER1_OVF_vect){
-	if(newline == 1){
-		buffer[bufferWrite] = 0x0000;
-		bufferWrite++;
-		newData++;
-		if(bufferRead == 64){
-			bufferRead = 0;
-		}
-		if(bufferWrite == 64){
-			bufferWrite = 0;
-		}
-			newline = 0;
-		}
+	if ( newline != 0 ){
+		TransmitByte('\n');
+	}
+	newline = 0;
+	printLine = bufferWrite + 1;
+	bitCounter = 0;
 }
 
 //Timer1 capture interrupt service subroutine
 ISR(TIMER1_CAPT_vect){
 	cli();
 	PORTB ^= _BV(4);
-	buffer[bufferWrite] = TCNT1;
-	bufferWrite++;
-	newData++;
-	newline = 1;
-
-	if(bufferRead == 64){
-		bufferRead = 0;
+	bitCounter++;
+	if ( TCNT1 >= 0x3000 ){
+		buffer[bufferWrite] = buffer[bufferWrite] << 1;
+		buffer[bufferWrite] += 1;
+	} else {
+		buffer[bufferWrite] = buffer[bufferWrite] << 1;
+		buffer[bufferWrite] &= 0xFE;
 	}
-	if(bufferWrite == 64){
-		bufferWrite = 0;
+	if( bitCounter == 8 ){
+		bitCounter = 0;
+		bufferWrite++;
+		bufferWrite %= 64;
+		newData++;
+		newline++;
 	}
-
+	
 	//reset TCNT1
 	TCNT1 = 0;
 
@@ -113,65 +123,28 @@ int main(void) {
 	TCNT0 = 0;
 
 	InitUART( F_CPU / BAUDRATE / 16 );	//Set up the baud rate
-	
-		//TransmitByte('S');
-		//TransmitByte('t');
-		//TransmitByte('a');
-		//TransmitByte('r');
-		//TransmitByte('t');
-		//TransmitByte('P');
-		//serial16bitPrint(0xABCD);
-		//serial16bitPrint(0xEF00);
 		
-		//This is the startup procedure it will always say that when the 
-		//micro starts up :-)
-
-		//serial32bitPrint(0x01234567);
-		//serial32bitPrint(0x89ABCDEF);
-		//TransmitByte('\n');
+	//This is the startup procedure it will always say that when the 
+	//micro starts up :-)
 	sei();	//Enable Interupts
 	while(1==1) {
-	if(blinkflag == 1)	{
-		PORTB ^= _BV(5);
-		blinkflag = 0;
-	}
+		if(blinkflag == 1)	{
+			PORTB ^= _BV(5);
+			blinkflag = 0;
+		}
 		/* Makes sure that the buffer never over flows.. this also
 		 * makes it possible for old data to be over written with new.*/
 	
 		//serial8bitPrint(newData);
 		if(newData != 0){
-			//serial16bitPrint(buffer[bufferRead]);
-			
-			if(buffer[bufferRead] >= 0x3000)
-			{
-				//TransmitByte('1');
-				output = (output << 1) + 1;
-				//TransmitByte(' ');
-				//serial32bitPrint(output);
-				//serial16bitPrint(buffer[bufferRead]);
-				//TransmitByte('\n');
-
-			} else if(buffer[bufferRead] == 0x0000) {
-				//TransmitByte('\n');
-				serial32bitPrint(output);
-				TransmitByte('\n');
-				output = 0;
-				//Transmit the 32bit HEX
-			} else {
-				//TransmitByte('0');
-				//TransmitByte(' ');
-				output = (output << 1) & 0xFFFFFFFE;
-				//serial16bitPrint(buffer[bufferRead]);
-				//serial32bitPrint(output);
+			serial8bitPrint(buffer[bufferRead]);
+			if( printLine == bufferRead ){
 				//TransmitByte('\n');
 			}
-				
-			//TransmitByte(' ');
 			bufferRead++;
+			bufferRead %= 64;
 			newData--;
-			
 		}
-		
 		/* loop forever timer does the job*/
 	}
 

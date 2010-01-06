@@ -21,7 +21,6 @@ void getConfigOptions(RemotePreferences & prefs, std::string fileName){
 			value = value + inputC;
 			inputC = fp.get();
 		}while(inputC.find("\n") && fp.good());
-		//cout << "Key = " << key << "\tValue = " << value << endl;
 		prefs.insertToHash(key,value);
 	}
 	return;

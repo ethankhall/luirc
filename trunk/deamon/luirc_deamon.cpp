@@ -115,6 +115,11 @@ int main(int argc, char *argv[]){
 		configFilename = vm["config"].as<string>();
 	}
 	
+	if (vm.count("new-config")){
+		setNewConfig(prefs, pref_settings, device);
+		exit(1);
+	}
+	
 	getConfigOptions(prefs, configFilename);
 	
 	//Begin functionality

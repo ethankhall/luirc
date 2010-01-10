@@ -1,6 +1,12 @@
 #include "preferences.hpp"
 
 using namespace std;
+void setNewConfig(RemotePreferences & prefs, ButtonPreferences keys, std::string fileName){
+  string keyButtons = keys.getKeys();
+	keyButtons[keyButtons.length()] = '\0';	//Terminate String, removing the trailing ':'
+	cout << keyButtons << endl;
+  return;
+}
 
 void getConfigOptions(RemotePreferences & prefs, std::string fileName){
 	ifstream fp;
@@ -29,6 +35,16 @@ void getConfigOptions(RemotePreferences & prefs, std::string fileName){
 /*
  *	ButtonPreferences class functions
  */
+
+string ButtonPreferences::getKeys(void){
+	string Keys;
+	Keys.clear();
+	for ( mapData_itter=mapData.begin() ; mapData_itter != mapData.end(); mapData_itter++ ){
+		Keys.append((*mapData_itter).first)
+		Keys.append(":")
+	}
+	return Keys;
+}
 void ButtonPreferences::insertToHash(std::string key, char value){
 	mapData.insert ( pair<std::string,char>(key,value) );
 	return;

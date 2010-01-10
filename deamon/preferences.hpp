@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
-#include "key_defines.hpp"
+//#include "key_defines.hpp"
 
 #define VERSION_NUMBER "0.2"
 
@@ -27,8 +27,10 @@ class ButtonPreferences {
 		void insertToHash(std::string key, char value);
 		void displayMap(void);
 		char searchHash(std::string key);
+		std::string getKeys(void);
 };
 
 void getConfigOptions(RemotePreferences & prefs, std::string fileName);
+void setNewConfig(RemotePreferences & prefs, ButtonPreferences keys, std::string fileName);
 
 #endif

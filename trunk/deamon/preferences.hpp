@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
+#include <string.h>
 //#include "key_defines.hpp"
 
 #define VERSION_NUMBER "0.2"

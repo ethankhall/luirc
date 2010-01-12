@@ -77,6 +77,7 @@ int main(int argc, char *argv[]){
 		("no-deamon", "Des not deamonize the process (Great for debugging)")
 		("version,v", "Print out the version")
 		("config,c", programOptions::value<string>()->default_value(DEFAULT_OPTION_FILE), "Config file")
+		("new-config", "Create a new config file")
 ;
 	programOptions::positional_options_description p;
 	p.add("programOptions", -1);

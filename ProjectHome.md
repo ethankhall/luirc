@@ -1,0 +1,1 @@
+This project is here to make an easy to use infrared remote control interface for linux. This is intended to used with a micro via the USB port. The hope is that there will eventually be an easy replacement for lirc.
